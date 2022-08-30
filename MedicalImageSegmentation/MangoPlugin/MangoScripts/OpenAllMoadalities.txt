@@ -1,0 +1,37 @@
+import os
+from glob import glob
+
+#Get the path of the current opened and selected Volume manager
+m_Vol_result = m_VolMan_manager.getCurrentVolume()
+
+j_URI_result = m_VolMan_manager.getLoadedURI()
+folder_path = str(j_URI_result)[6:]
+folder_path =os.path.dirname(os.path.abspath(folder_path))
+if('BraTS' in str(j_URI_result)):
+	#Close all current volume managers
+	j_List_result = m_Mango_mango.getAllVolumeManagers()
+	for i in range(len(j_List_result)):
+		j_List_result[i].disposeVolumeManager()
+	#Extract only the directory of the selected image
+	#folder_path =os.path.dirname(os.path.abspath(res[0]))
+	print("Patient Path: "+folder_path)
+
+	#Get all Modalities of selected MRI
+	modalities = glob(folder_path + "\**")
+
+	list_paths = []
+
+	for i in range(len(modalities)):
+		if (modalities[i][-12:] == 'flair.nii.gz' or modalities[i][-9:] == 't1.nii.gz' or modalities[i][-9:] == 't2.nii.gz' or modalities[i][-11:] == 't1ce.nii.gz'):
+			list_paths.append(modalities[i])
+ 
+	#Open all modalities of image
+	for j in range(len(list_paths)):  
+		m_VolMan_result2 = m_Mango_mango.makeNewVolumeManager(list_paths[j])
+
+	#Zoom out from defaut size
+	j_List_result = m_Mango_mango.getAllVolumeManagers()
+	for i in range(len(j_List_result)):
+		j_List_result[i].selectMenuOption("Zoom Out")
+		j_List_result[i].selectMenuOption("Zoom Out")
+

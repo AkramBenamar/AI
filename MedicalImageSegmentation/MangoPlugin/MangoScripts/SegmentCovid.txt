@@ -1,0 +1,56 @@
+hostname="20.199.20.146"
+model_path="../Models/covG.h5"
+out_path="../outct"
+evaluate_path="../dist/evaluate"
+import subprocess
+import os 
+from subprocess import Popen, PIPE
+
+#PATH
+m_Vol_result = m_VolMan_manager.getCurrentVolume()
+j_URI_result = m_VolMan_manager.getLoadedURI()
+folder_path=str(j_URI_result)[6:]
+print(folder_path)
+
+
+
+if ( ('ct_scans' in str(j_URI_result))and('_org_' in str(j_URI_result)) ):
+	#SEGMENTATION
+	command = 'segcov.exe --folder "' + folder_path + '" --model "'+model_path+'" --output "'+out_path+'"' 
+	os.chdir(r"..\dist\segcov")
+	stdout = Popen( command , shell=True, stdout=PIPE).stdout
+	output = stdout.read()
+
+	#OVERLAY
+	res = out_path+"/segct.nii.gz"
+	m_VolMan_manager.addOverlay(res,False)
+	m_VolMan_manager.setCurrentVolumeIndex(1)
+
+
+
+	
+	#OPEN GROUND TRUTH
+	j_URI_result = m_VolMan_manager.getLoadedURI()
+	folder_path = str(j_URI_result)[6:]
+	modalitie=folder_path
+	overlay_path =folder_path
+	overlay_path=overlay_path.replace("ct_scans","infection_mask")
+	
+	if("_org_covid-19-pneumonia-" in overlay_path):
+        	overlay_path=overlay_path.replace("org_covid-19-pneumonia-","")
+        	overlay_path=overlay_path.replace("-dcm","")
+	elif("_org_" in overlay_path):
+        	overlay_path=overlay_path.replace("org_","")
+	if os.path.isfile(overlay_path)== True:
+         
+		m_VolMan_result2 = m_Mango_mango.makeNewVolumeManager(modalitie)
+		m_VolMan_result2.addOverlay(overlay_path,False)
+
+		#EVALUATION
+		command = 'evaluate.exe --folderstat "' + out_path+'"/stats.json --disease covid-19"' 
+		os.chdir(evaluate_path)
+		stdout = Popen( command , shell=True, stdout=PIPE).stdout
+		output = stdout.read()
+else:
+	m_VolMan_manager.showErrorMessage("ERROR. Make sure that the image belong to the specified dataset of ct scans", "Error")
+

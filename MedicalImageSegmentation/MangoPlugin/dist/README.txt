@@ -1,0 +1,1 @@
+You have to generate exe files for segbrats,segcov and evaluate

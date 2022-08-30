@@ -1,0 +1,62 @@
+import os.path
+import subprocess
+import os 
+from subprocess import Popen, PIPE
+
+#PATHS
+evaluate_path="../dist/evaluate"
+model_path="../Models/ModelGl.h5"
+out_path="../outbrats"
+m_Vol_result = m_VolMan_manager.getCurrentVolume()
+j_URI_result = m_VolMan_manager.getLoadedURI()
+print(os.path.dirname(str(j_URI_result)[6:]))
+folder_path=os.path.dirname(str(j_URI_result)[6:])
+
+
+
+#SEGMENTATION
+
+
+if ('BraTS' in str(j_URI_result)):
+	command = 'segbrats.exe --folder "' + folder_path + '" --model "'+model_path+'" --output "'+out_path+'"' 
+	os.chdir(r"..\dist\segbrats")
+	stdout = Popen( command , shell=True, stdout=PIPE).stdout
+	output = stdout.read()
+	print(command)
+
+	#OVERLAY
+	res = out_path+"/segbrats.nii.gz"
+	m_VolMan_manager.addOverlay(res,False)
+	m_VolMan_manager.setCurrentVolumeIndex(1)
+	m_VolMan_manager.setVolumeDisplayColorTable(
+    		m_VolMan_manager.volumes[-1],"BratsColors")
+
+
+	#EVALUATION
+	j_URI_result = m_VolMan_manager.getLoadedURI()
+	folder_path = str(j_URI_result)[6:]
+	modalitie=folder_path
+	folder_path =os.path.dirname(os.path.abspath(folder_path))
+	overlay_path =os.path.join(folder_path, os.path.basename(folder_path)+ "_seg.nii.gz")
+	print(folder_path)
+
+	
+	#GROUND TRUTH 
+	if os.path.isfile(overlay_path)== True:
+		print('here')
+		m_VolMan_result2 = m_Mango_mango.makeNewVolumeManager(modalitie)
+		m_VolMan_result2.addOverlay(overlay_path,False)
+		m_VolMan_result2.setCurrentVolumeIndex(1)
+		m_VolMan_result2.setVolumeDisplayColorTable(
+   			m_VolMan_result2.volumes[-1],"BratsColors")
+
+
+		#EVALUATION
+		command = 'evaluate.exe --folderstat "' + out_path+'"/stats.json --disease brain-tumor"' 
+		os.chdir(evaluate_path)
+		stdout = Popen( command , shell=True, stdout=PIPE).stdout
+		output = stdout.read()
+else:
+	m_VolMan_manager.showErrorMessage("ERROR. Make sure it's in the same folder as the image and that its name is in the BraTS format (filename_seg.nii.gz)", "Error")
+
+
